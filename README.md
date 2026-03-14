@@ -2,7 +2,7 @@
 
 Think Link Sync is a real-time, interactive web application designed for teams to align their priorities and build consensus. Participants can create, reorder, and sync their priority lists in real-time while observing others' thoughts.
 
-![License](https://img.shields.io/badge/license-ISC-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Key Features
 
@@ -58,4 +58,4 @@ Think Link Sync is a real-time, interactive web application designed for teams t
 
 ## License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
