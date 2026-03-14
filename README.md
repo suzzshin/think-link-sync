@@ -24,7 +24,7 @@ Think Link Sync is a real-time, interactive web application designed for teams t
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v14 or higher recommended)
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
 
 ### Installation
 
