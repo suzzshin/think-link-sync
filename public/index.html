@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Think Link Sync - Priority Alignment App</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 40px; 
+            background: var(--bg); 
+            color: var(--text-main);
+            margin: 0;
+            align-items: center;
+        }
+
+        .header { 
+            margin-bottom: 40px; 
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+            position: relative;
+            align-items: flex-start;
+        }
+
+        #action-header { display: none; gap: 12px; align-items: flex-start; }
+        #join-header { display: flex; }
+
+        .control-btns {
+            position: absolute;
+            right: -88px;
+            top: 6px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .circular-btn {
+            background: none;
+            border: 2px solid var(--text-muted);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .circular-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+        .clear-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .circular-btn svg { width: 16px; height: 16px; }
+
+        .boards-wrapper { 
+            display: flex; 
+            gap: 32px; 
+            align-items: flex-start; 
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .board { 
+            background: var(--card-bg); 
+            padding: 24px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            width: 260px; 
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        #my-board { display: none; }
+
+        .board h3 { 
+            margin-top: 0; 
+            font-size: 18px; 
+            color: var(--text-main); 
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        #my-board h3 span:first-child {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        #my-board h3 span:first-child:hover { background: #334155; }
+
+        .item { 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            user-select: none; 
+            border: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.4s ease-out forwards;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #my-list .item { cursor: grab; }
+        #my-list .item:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+        #my-list .item:active { cursor: grabbing; }
+
+        .other-list .item { 
+            cursor: default; 
+            filter: brightness(0.8) grayscale(0.2);
+            opacity: 0.9;
+        }
+
+        .icon-btn {
+            width: 16px;
+            height: 16px;
+            opacity: 0.4;
+            transition: all 0.2s;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+        
+        .copy-container {
+            position: absolute;
+            top: 24px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-toast {
+            font-size: 10px;
+            background: var(--success);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateX(5px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+        .copy-toast.show { opacity: 1; transform: translateX(0); }
+        .copy-btn.success { color: var(--success); opacity: 1; }
+
+        .highlight-update { animation: pulseHighlight 1s ease-out; }
+        @keyframes pulseHighlight {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.02); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2); }
+            100% { transform: scale(1); }
+        }
+
+        #others-container { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+
+        textarea { 
+            padding: 12px 20px; 
+            border: 2px solid var(--border); 
+            border-radius: 12px; 
+            width: 300px; 
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 46px;
+            max-height: 200px;
+            background: var(--card-bg);
+            color: var(--text-main);
+        }
+        textarea:focus { border-color: var(--primary); }
+
+        .primary-btn { 
+            padding: 12px 24px; 
+            border: none; 
+            background: var(--primary); 
+            color: white; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.2s;
+            height: 46px;
+        }
+        .primary-btn:hover { 
+            background: var(--primary-hover); 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+        .modal {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+        }
+        .modal h2 { margin-top: 0; color: var(--text-main); }
+        .modal ul { padding-left: 20px; color: var(--text-muted); line-height: 1.6; }
+        .modal li { margin-bottom: 12px; }
+        .modal-close-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .sortable-ghost { opacity: 0.3; background: var(--primary) !important; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div id="join-header">
+            <button class="primary-btn" onclick="joinSync()">Join sync to participate</button>
+        </div>
+
+        <div id="action-header">
+            <textarea id="new-item-input" placeholder="What's the priority? (Paste multiple lines to bulk add)" rows="1"></textarea>
+            <button class="primary-btn" onclick="addNewItem()">Add</button>
+        </div>
+
+        <div class="control-btns">
+            <button class="circular-btn clear-btn" title="Clear all items" onclick="confirmClearAll()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+            <button class="circular-btn help-btn" title="Help" onclick="toggleHelp()">?</button>
+        </div>
+    </div>
+
+    <div class="boards-wrapper">
+        <div class="board" id="my-board">
+            <div class="copy-container">
+                <span class="copy-toast" id="my-copy-toast">Copied!</span>
+                <div class="icon-btn copy-btn" title="Copy as Markdown" onclick="copyBoard('my-board', 'my-copy-toast')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </div>
+            </div>
+            <h3>
+                <span id="my-name-display" onclick="changeName()">My Priority</span>
+                <span class="icon-btn" onclick="changeName()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </span>
+            </h3>
+            <div id="my-list"></div>
+        </div>
+
+        <div id="others-container"></div>
+    </div>
+
+    <div class="modal-overlay" id="help-modal" onclick="toggleHelp()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>How to use</h2>
+            <ul>
+                <li><strong>Join sync:</strong> Click the button at the top to start participating.</li>
+                <li><strong>Add Item:</strong> Once joined, paste or type multiple lines to add items.</li>
+                <li><strong>Reorder:</strong> Drag and drop items in your board to change priority.</li>
+                <li><strong>Copy:</strong> Click the clipboard icon on any board to copy its content as Markdown.</li>
+                <li><strong>Clear All:</strong> Click the trash icon to reset all items for everyone (use for new discussions).</li>
+            </ul>
+            <button class="modal-close-btn" onclick="toggleHelp()">Got it!</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <script>
+        const socket = io();
+        const myList = document.getElementById('my-list');
+        const othersContainer = document.getElementById('others-container');
+        const myNameDisplay = document.getElementById('my-name-display');
+        const helpModal = document.getElementById('help-modal');
+        const joinHeader = document.getElementById('join-header');
+        const actionHeader = document.getElementById('action-header');
+        const myBoard = document.getElementById('my-board');
+        const newItemInput = document.getElementById('new-item-input');
+        
+        let localMasterItems = {};
+        let isJoined = false;
+
+        const PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+        const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+
+        Sortable.create(myList, {
+            animation: 250,
+            ghostClass: 'sortable-ghost',
+            onEnd: () => socket.emit('updateOrder', getMyOrder())
+        });
+
+        function getMyOrder() {
+            return Array.from(myList.children).map(el => el.dataset.id);
+        }
+
+        function toggleHelp() {
+            helpModal.style.display = (helpModal.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function confirmClearAll() {
+            if (confirm('Are you sure you want to clear ALL items for ALL users?\nThis will reset the current discussion.')) {
+                socket.emit('clearAll');
+            }
+        }
+
+        function copyBoard(boardId, toastId) {
+            const board = document.getElementById(boardId);
+            const nameSpan = board.querySelector('h3 span');
+            const name = nameSpan ? nameSpan.innerText : 'Unknown';
+            const items = Array.from(board.querySelectorAll('.item span:first-child')).map(el => el.innerText);
+            
+            let markdown = `### ${name}'s Priority\n`;
+            items.forEach((text, index) => {
+                markdown += `${index + 1}. ${text}\n`;
+            });
+
+            navigator.clipboard.writeText(markdown).then(() => {
+                const toast = document.getElementById(toastId);
+                const btn = board.querySelector('.copy-btn');
+                if (toast && btn) {
+                    toast.classList.add('show');
+                    btn.classList.add('success');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                        btn.classList.remove('success');
+                    }, 1500);
+                }
+            });
+        }
+
+        function joinSync() {
+            const savedName = localStorage.getItem('sync_user_name') || '';
+            const name = prompt('Enter your name to participate:', savedName);
+            if (name && name.trim() !== '') {
+                const trimmedName = name.trim().substring(0, 20);
+                localStorage.setItem('sync_user_name', trimmedName);
+                completeJoin(trimmedName);
+            }
+        }
+
+        function completeJoin(name) {
+            isJoined = true;
+            myNameDisplay.innerText = name;
+            joinHeader.style.display = 'none';
+            actionHeader.style.display = 'flex';
+            myBoard.style.display = 'block';
+
+            myList.innerHTML = '';
+            Object.keys(localMasterItems).forEach(id => {
+                const el = createItemElement(id, localMasterItems[id], true);
+                if (el) myList.appendChild(el);
+            });
+
+            socket.emit('join', { name: name, order: getMyOrder() });
+        }
+
+        function changeName() {
+            const currentName = myNameDisplay.innerText;
+            const newName = prompt('Enter your name:', currentName);
+            if (newName && newName.trim() !== '') {
+                const trimmedName = newName.trim().substring(0, 20);
+                myNameDisplay.innerText = trimmedName;
+                localStorage.setItem('sync_user_name', trimmedName);
+                socket.emit('updateName', trimmedName);
+            }
+        }
+
+        function applyItemStyle(el, item) {
+            if (!item) return;
+            el.style.backgroundColor = item.color || '#1e293b';
+            el.style.color = item.textCol || '#f8fafc';
+        }
+
+        function createItemElement(id, item, isMine) {
+            if (!item || typeof item !== 'object') return null;
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.dataset.id = id;
+            div.id = (isMine ? 'my-item-' : 'other-item-') + id;
+            
+            const textSpan = document.createElement('span');
+            textSpan.innerText = item.text || 'Untitled';
+            div.appendChild(textSpan);
+
+            applyItemStyle(div, item);
+
+            if (isMine) {
+                const editBtn = document.createElement('span');
+                editBtn.className = 'icon-btn';
+                editBtn.innerHTML = PENCIL_SVG;
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const newText = prompt('Edit item name (Leave empty to delete):', item.text);
+                    if (newText === null) return;
+                    if (newText.trim() === '') {
+                        if (confirm(`Delete "${item.text}"?`)) {
+                            socket.emit('deleteItem', id);
+                        }
+                    } else if (newText !== item.text) {
+                        socket.emit('editItem', { id: id, text: newText });
+                    }
+                };
+                div.appendChild(editBtn);
+            }
+            return div;
+        }
+
+        socket.on('init', (data) => {
+            localMasterItems = data.masterItems;
+            othersContainer.innerHTML = '';
+            for (const [userId, state] of Object.entries(data.userStates)) {
+                if (userId !== socket.id) renderOtherUserBoard(userId, state.name, state.order);
+            }
+        });
+
+        socket.on('userJoined', (data) => {
+            if (data.userId !== socket.id) renderOtherUserBoard(data.userId, data.name, data.order);
+        });
+
+        socket.on('clearedAll', () => {
+            localMasterItems = {};
+            myList.innerHTML = '';
+            document.querySelectorAll('.other-list').forEach(l => l.innerHTML = '');
+        });
+
+        socket.on('nameUpdated', (data) => {
+            const board = document.getElementById('board-' + data.userId);
+            if (board) {
+                const nameSpan = board.querySelector('h3 span');
+                if (nameSpan) nameSpan.innerText = data.name;
+            }
+        });
+
+        socket.on('stateUpdated', (data) => {
+            const listContainer = document.getElementById('list-' + data.userId);
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                data.order.forEach(id => {
+                    if (localMasterItems[id]) {
+                        const el = createItemElement(id, localMasterItems[id], false);
+                        if (el) listContainer.appendChild(el);
+                    }
+                });
+            }
+            const board = document.getElementById('board-' + data.userId);
+            if (board) {
+                board.classList.remove('highlight-update');
+                void board.offsetWidth;
+                board.classList.add('highlight-update');
+            }
+        });
+
+        socket.on('userDisconnected', (userId) => {
+            const board = document.getElementById('board-' + userId);
+            if (board) board.remove();
+        });
+
+        socket.on('itemAdded', (item) => {
+            localMasterItems[item.id] = item;
+            if (isJoined && !document.querySelector(`#my-list .item[data-id="${item.id}"]`)) {
+                const el = createItemElement(item.id, item, true);
+                if (el) {
+                    myList.appendChild(el);
+                    socket.emit('updateOrder', getMyOrder());
+                }
+            }
+        });
+
+        socket.on('itemEdited', (item) => {
+            localMasterItems[item.id] = item;
+            document.querySelectorAll(`.item[data-id="${item.id}"]`).forEach(el => {
+                const textSpan = el.querySelector('span');
+                if (textSpan) textSpan.innerText = item.text || 'Untitled';
+                applyItemStyle(el, item);
+            });
+        });
+
+        socket.on('itemDeleted', (itemId) => {
+            delete localMasterItems[itemId];
+            document.querySelectorAll(`.item[data-id="${itemId}"]`).forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.9)';
+                setTimeout(() => el.remove(), 200);
+            });
+            if (isJoined) socket.emit('updateOrder', getMyOrder());
+        });
+
+        function addNewItem() {
+            const rawText = newItemInput.value.trim();
+            if (rawText) {
+                const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== '');
+                lines.forEach((line, index) => {
+                    const newId = 'item-' + (Date.now() + index);
+                    socket.emit('addItem', { id: newId, text: line });
+                });
+                newItemInput.value = '';
+                newItemInput.rows = 1;
+            }
+        }
+
+        newItemInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                addNewItem();
+            }
+        });
+
+        newItemInput.addEventListener('input', function () {
+            this.rows = 1;
+            const lineCount = this.value.split('\n').length;
+            this.rows = Math.min(Math.max(lineCount, 1), 8);
+        });
+
+        function renderOtherUserBoard(userId, name, order) {
+            let board = document.getElementById('board-' + userId);
+            const toastId = `toast-${userId}`;
+            if (!board) {
+                board = document.createElement('div');
+                board.className = 'board';
+                board.id = 'board-' + userId;
+                board.innerHTML = `
+                    <div class="copy-container">
+                        <span class="copy-toast" id="${toastId}">Copied!</span>
+                        <div class="icon-btn copy-btn" title="Copy as Markdown" onclick="copyBoard('board-${userId}', '${toastId}')">${COPY_SVG}</div>
+                    </div>
+                    <h3><span>${name}</span></h3>
+                    <div class="other-list" id="list-${userId}"></div>
+                `;
+                othersContainer.appendChild(board);
+            }
+            const listContainer = document.getElementById('list-' + userId);
+            listContainer.innerHTML = ''; 
+            order.forEach(id => {
+                if (localMasterItems[id]) {
+                    const el = createItemElement(id, localMasterItems[id], false);
+                    if (el) listContainer.appendChild(el);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
